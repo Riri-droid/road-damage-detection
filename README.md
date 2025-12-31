@@ -1,108 +1,128 @@
-Road Damage Detection
+# Crackathon Road Damage Detection Pipeline
 
-End-to-end computer vision pipeline for detecting road surface damage (cracks and potholes) using YOLOv8 and the RDD2022 dataset.
+End-to-end pipeline for the Crackathon challenge using YOLOv8 on the RDD2022 dataset.
 
-This project was built for the Crackathon challenge and focuses on a clean, reproducible training and inference workflow rather than leaderboard-only optimization.
+## Overview
 
-Overview
+Object detection pipeline for road damage detection using YOLOv8, trained on the Road Damage Detection 2022 dataset.
 
-The system detects and classifies five types of road damage from images:
+### Class Mapping
+| Class ID | Name | Description |
+|----------|------|-------------|
+| 0 | Longitudinal crack | Linear cracks parallel to road direction |
+| 1 | Transverse crack | Linear cracks perpendicular to road direction |
+| 2 | Alligator crack | Interconnected crack patterns |
+| 3 | Other corruption | Miscellaneous road surface damage |
+| 4 | Pothole | Circular/irregular depressions |
 
-Longitudinal crack
+## Installation
 
-Transverse crack
+### Requirements
+- Python 3.8+
+- CUDA-compatible GPU (recommended)
+- 8GB+ GPU memory for training
 
-Alligator crack
+### Setup
 
-Other surface corruption
+```bash
+# Clone or navigate to project directory
+cd crackathon
 
-Pothole
+# Create virtual environment (recommended)
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
 
-It supports dataset preparation, model training, evaluation, and generation of competition-ready prediction files.
-
-Model
-
-Architecture: YOLOv8m
-
-Framework: Ultralytics YOLOv8
-
-Input size: 640 × 640
-
-Optimizer: AdamW
-
-Mixed Precision (AMP): Enabled
-
-YOLOv8m was chosen as a balance between accuracy and inference speed, performing well on both thin cracks and larger potholes.
-
-Dataset
-
-Dataset: Road Damage Detection 2022 (RDD2022)
-
-Format: YOLO (class x_center y_center width height)
-
-Split:
-
-Train / Validation (with labels)
-
-Test (images only, used for submission)
-
-Dataset handling includes verification of image–label consistency and automatic configuration generation.
-
-Project Structure
-crackathon/
-├── main.py              # Pipeline entry point
-├── config.py            # Training configuration
-├── dataset_handler.py   # Dataset preparation and validation
-├── train.py             # Training logic
-├── evaluate.py          # Evaluation metrics
-├── inference.py         # Test inference and submission generation
-├── data/                # Dataset directory
-└── outputs/             # Model checkpoints and predictions
-
-Quick Start
-
-Install dependencies:
-
+# Install dependencies
 pip install -r requirements.txt
+```
 
+## Quick Start
 
-Run the full pipeline:
-
+### Full Pipeline
+```bash
 python main.py --full
+```
 
-
-Competition-optimized run:
-
+### Competition Mode
+```bash
 python main.py --full --competition
+```
 
-Output
+### Individual Stages
+```bash
+python main.py --prepare
 
-Trained model checkpoint (best.pt)
+python main.py --train
 
-Per-image prediction .txt files for the test set
+python main.py --evaluate
 
-submission.zip ready for upload
+python main.py --submit
+```
 
-Results (Validation)
+## Dataset
 
-mAP@50: ~45–50%
+### Source
+The dataset is downloaded from Google Drive:
+https://drive.google.com/drive/folders/1JpBQ5haJCvPhD-0jUdir3GiGNbBnah93
 
-mAP@50–95: ~21–26%
+## Model Architecture
 
-Inference speed: ~77 FPS on RTX 4070
+YOLOv8 was chosen for its anchor-free design, which handles varying aspect ratios of road damage well. The CSPDarknet backbone with Path Aggregation Network provides multi-scale feature fusion for detecting both small cracks and large potholes.
 
-Performance varies by class, with potholes being the most challenging due to size and frequency.
+### Model Variants
+| Variant | Parameters | mAP (COCO) | Use Case |
+|---------|------------|------------|----------|
+| YOLOv8n | 3.2M | 37.3% | Real-time, edge devices |
+| YOLOv8s | 11.2M | 44.9% | Balanced speed/accuracy |
+| YOLOv8m | 25.9M | 50.2% | Default |
+| YOLOv8l | 43.7M | 52.9% | Higher accuracy |
+| YOLOv8x | 68.2M | 53.9% | Maximum accuracy |
 
-Notes
+### Training Command
+```bash
+python main.py --train
 
-Designed for reproducibility and correctness
+python main.py --train --epochs 150 --batch 8
 
-Uses only the provided dataset
+python main.py --train --resume
+```
 
-Suitable for real-time or near–real-time inference
+## Evaluation
 
-References
+### Metrics
+- **mAP@0.5**: Primary metric - Average Precision at IoU threshold 0.5
+- **mAP@0.5:0.95**: COCO-style mAP averaged over IoU thresholds
+- **Precision**: TP / (TP + FP)
+- **Recall**: TP / (TP + FN)
 
-Ultralytics YOLOv8
+### NMS (Non-Maximum Suppression)
+IoU threshold 0.45 (default) for removing redundant overlapping detections.
 
+### Evaluation Command
+```bash
+python main.py --evaluate
 
+python evaluate.py --weights path/to/best.pt --optimize-conf
+```
+
+## Inference & Submission
+
+### Prediction Format
+Each test image generates a `.txt` file:
+```
+<class_id> <x_center> <y_center> <width> <height> <confidence>
+```
+
+### Test-Time Augmentation (TTA)
+TTA aggregates predictions from multiple augmented versions (multi-scale + horizontal flip). Slower inference but typically improves mAP by 1-3%.
+
+### Submission Generation
+```bash
+python main.py --submit
+
+# slower but better mAP
+python main.py --submit --tta
+```
+### References
+- [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics)
