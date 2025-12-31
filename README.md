@@ -66,19 +66,6 @@ python main.py --submit
 The dataset is downloaded from Google Drive:
 https://drive.google.com/drive/folders/1JpBQ5haJCvPhD-0jUdir3GiGNbBnah93
 
-## Model Architecture
-
-YOLOv8 was chosen for its anchor-free design, which handles varying aspect ratios of road damage well. The CSPDarknet backbone with Path Aggregation Network provides multi-scale feature fusion for detecting both small cracks and large potholes.
-
-### Model Variants
-| Variant | Parameters | mAP (COCO) | Use Case |
-|---------|------------|------------|----------|
-| YOLOv8n | 3.2M | 37.3% | Real-time, edge devices |
-| YOLOv8s | 11.2M | 44.9% | Balanced speed/accuracy |
-| YOLOv8m | 25.9M | 50.2% | Default |
-| YOLOv8l | 43.7M | 52.9% | Higher accuracy |
-| YOLOv8x | 68.2M | 53.9% | Maximum accuracy |
-
 ### Training Command
 ```bash
 python main.py --train
